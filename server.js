@@ -41,27 +41,35 @@ app.post('/scrape', async (req, res) => {
 
     console.log('Vado su login ProntoPro');
 
-    await page.goto('https://pro.prontopro.it/login', {
-      waitUntil: 'domcontentloaded',
-      timeout: 60000
-    });
+await page.goto('https://pro.prontopro.it/login', {
+  waitUntil: 'domcontentloaded',
+  timeout: 60000
+});
 
-    console.log('Pagina login aperta:', page.url());
+await page.waitForLoadState('domcontentloaded');
+await page.waitForTimeout(3000);
 
-    await page.waitForTimeout(3000);
+console.log('URL dopo goto login:', page.url());
 
-    console.log('Compilo email');
-    await page.fill('input[type="email"]', process.env.PRONTOPRO_EMAIL);
+const html = await page.content();
+console.log('HTML login preview:', html.slice(0, 2000));
 
-    console.log('Compilo password');
-    await page.fill('input[type="password"]', process.env.PRONTOPRO_PASSWORD);
+const emailSelector = 'input[type="email"], input[name="email"], input[autocomplete="username"]';
+const passwordSelector = 'input[type="password"], input[name="password"], input[autocomplete="current-password"]';
 
-    console.log('Click login');
-    await page.click('button[type="submit"]');
+console.log('Cerco campo email');
+await page.waitForSelector(emailSelector, { timeout: 15000 });
+await page.fill(emailSelector, process.env.PRONTOPRO_EMAIL);
 
-    await page.waitForTimeout(5000);
+console.log('Cerco campo password');
+await page.waitForSelector(passwordSelector, { timeout: 15000 });
+await page.fill(passwordSelector, process.env.PRONTOPRO_PASSWORD);
 
-    console.log('Login inviato, URL attuale:', page.url());
+console.log('Click login');
+await page.click('button[type="submit"], button');
+
+await page.waitForTimeout(5000);
+console.log('Login inviato, URL attuale:', page.url());
 
     console.log('Vado sulla pagina lavoro:', url);
 
