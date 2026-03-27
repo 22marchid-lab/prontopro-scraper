@@ -8,6 +8,37 @@ app.get('/', (req, res) => {
   res.send('ProntoPro scraper online');
 });
 
+function extractRealProntoProUrl(inputUrl) {
+  if (!inputUrl) return '';
+
+  let decoded = inputUrl;
+
+  // decode multiplo
+  for (let i = 0; i < 5; i++) {
+    try {
+      const next = decodeURIComponent(decoded);
+      if (next === decoded) break;
+      decoded = next;
+    } catch {
+      break;
+    }
+  }
+
+  // caso migliore: trova direttamente open.prontopro.it
+  const openMatch = decoded.match(/https:\/\/open\.prontopro\.it\/[^\s"'<>]+/i);
+  if (openMatch) {
+    return openMatch[0];
+  }
+
+  // fallback: se c'è un link prontopro.it non cdn, prova quello
+  const genericMatch = decoded.match(/https:\/\/[^\s"'<>]*prontopro\.it\/[^\s"'<>]+/i);
+  if (genericMatch) {
+    return genericMatch[0];
+  }
+
+  return inputUrl;
+}
+
 app.post('/scrape', async (req, res) => {
   console.log('POST /scrape ricevuto');
   console.log('BODY:', req.body);
@@ -56,15 +87,7 @@ app.post('/scrape', async (req, res) => {
     await page.waitForTimeout(5000);
 
     // DEBUG PAGINA LAVORO / LINK OPPORTUNITÀ
-    let targetUrl = url;
-
-    if (targetUrl.includes('ses.prontopro.it')) {
-      const decodedUrl = decodeURIComponent(targetUrl);
-      const match = decodedUrl.match(/https:\/\/open\.prontopro\.it\/[^\s]+/i);
-      if (match) {
-        targetUrl = match[0];
-      }
-    }
+    const targetUrl = extractRealProntoProUrl(url);
 
     console.log('URL ORIGINALE:', url);
     console.log('URL PULITO:', targetUrl);
