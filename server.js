@@ -61,19 +61,24 @@ app.post('/scrape', async (req, res) => {
 
     console.log('Browser avviato');
 
-    const context = await browser.newContext();
-    console.log('Context creato');
+const context = await browser.newContext({
+  userAgent:
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
+});    console.log('Context creato');
 
     const page = await context.newPage();
+    await page.setViewportSize({ width: 1280, height: 800 });
     console.log('Page creata');
 
     // ================= LOGIN =================
     console.log('Vado su login ProntoPro');
 
-    await page.goto('https://pro.prontopro.it/login', {
-  waitUntil: 'networkidle',
-  timeout: 60000,
+await page.goto('https://pro.prontopro.it/login', {
+  waitUntil: 'domcontentloaded',
+  timeout: 30000,
 });
+
+await page.waitForTimeout(3000);
 
 await page.waitForSelector('input[type="email"]', { timeout: 15000 });
     console.log('Inserisco credenziali...');
