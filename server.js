@@ -71,6 +71,11 @@ app.post('/scrape', async (req, res) => {
     console.log('Context creato');
 
     const page = await context.newPage();
+    await page.addInitScript(() => {
+  Object.defineProperty(navigator, 'webdriver', {
+    get: () => false,
+  });
+});
     await page.setViewportSize({ width: 1280, height: 800 });
     console.log('Page creata');
 
@@ -78,8 +83,8 @@ app.post('/scrape', async (req, res) => {
     console.log('Vado su login ProntoPro');
 
     await page.goto('https://pro.prontopro.it/login', {
-      waitUntil: 'domcontentloaded',
-      timeout: 30000,
+      waitUntil: 'networkidle',
+timeout: 60000,
     });
 
     await page.waitForTimeout(4000);
