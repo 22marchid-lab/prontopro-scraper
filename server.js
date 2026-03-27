@@ -79,8 +79,18 @@ app.post('/scrape', async (req, res) => {
 
     console.log('Inserisco credenziali...');
 
-    await page.fill('input[type="email"]', process.env.PP_EMAIL);
-    await page.fill('input[type="password"]', process.env.PP_PASSWORD);
+    const email = process.env.PRONTOPRO_EMAIL;
+const password = process.env.PRONTOPRO_PASSWORD;
+
+console.log('EMAIL:', email);
+console.log('PASSWORD PRESENTE:', !!password);
+
+if (!email || !password) {
+  throw new Error('Credenziali ProntoPro mancanti su Railway');
+}
+
+await page.fill('input[type="email"]', email);
+await page.fill('input[type="password"]', password);
 
     await page.click('button[type="submit"]');
 
