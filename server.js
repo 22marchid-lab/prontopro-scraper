@@ -27,14 +27,29 @@ app.post('/scrape', async (req, res) => {
     });
 
     const context = await browser.newContext();
-    const page = await context.newPage();
+const page = await context.newPage();
 
-    await page.goto(url, {
-      waitUntil: 'domcontentloaded',
-      timeout: 60000
-    });
+// LOGIN PRONTOPRO
+await page.goto("https://pro.prontopro.it/login", {
+  waitUntil: "domcontentloaded",
+  timeout: 60000
+});
 
-    await page.waitForTimeout(5000);
+await page.waitForTimeout(3000);
+
+await page.fill('input[type="email"]', process.env.PRONTOPRO_EMAIL);
+await page.fill('input[type="password"]', process.env.PRONTOPRO_PASSWORD);
+await page.click('button[type="submit"]');
+
+await page.waitForTimeout(5000);
+
+// PAGINA DEL LAVORO
+await page.goto(url, {
+  waitUntil: "domcontentloaded",
+  timeout: 60000
+});
+
+await page.waitForTimeout(5000);
 
     const bodyText = await page.locator('body').innerText();
 
