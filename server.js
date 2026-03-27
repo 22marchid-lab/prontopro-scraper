@@ -62,83 +62,23 @@ app.post('/scrape', async (req, res) => {
     console.log('Browser avviato');
 
     const context = await browser.newContext({
-  userAgent:
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
-  viewport: { width: 1280, height: 800 },
-  locale: 'it-IT',
-  timezoneId: 'Europe/Rome',
-});
-    console.log('Context creato');
+      storageState: 'storageState.json',
+      userAgent:
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
+      viewport: { width: 1280, height: 800 },
+      locale: 'it-IT',
+      timezoneId: 'Europe/Rome',
+    });
+    console.log('Context creato con sessione salvata');
 
     const page = await context.newPage();
     await page.addInitScript(() => {
-  Object.defineProperty(navigator, 'webdriver', {
-    get: () => false,
-  });
-});
-    await page.setViewportSize({ width: 1280, height: 800 });
+      Object.defineProperty(navigator, 'webdriver', {
+        get: () => false,
+      });
+    });
     console.log('Page creata');
 
-    // ================= LOGIN =================
-    console.log('Vado su login ProntoPro');
-
-    await page.goto('https://pro.prontopro.it/login', {
-      waitUntil: 'networkidle',
-timeout: 60000,
-    });
-
-    await page.waitForTimeout(4000);
-
-    console.log('URL dopo goto:', page.url());
-    console.log('TITLE:', await page.title());
-
-    // 🔥 PROVA PIÙ SELETTORI (ANTI-BOT FIX)
-    let emailSelector = null;
-
-    const possibleSelectors = [
-      'input[type="email"]',
-      'input[name="email"]',
-      'input#email',
-      'input[type="text"]'
-    ];
-
-    for (const sel of possibleSelectors) {
-      const found = await page.$(sel);
-      if (found) {
-        emailSelector = sel;
-        console.log('Campo email trovato con:', sel);
-        break;
-      }
-    }
-
-    if (!emailSelector) {
-      const html = await page.content();
-      console.log('HTML DEBUG:', html.slice(0, 1000));
-
-      throw new Error('Campo email NON trovato → probabile blocco anti-bot');
-    }
-
-    console.log('Inserisco credenziali...');
-
-    const email = process.env.PRONTOPRO_EMAIL;
-    const password = process.env.PRONTOPRO_PASSWORD;
-
-    if (!email || !password) {
-      throw new Error('Credenziali ProntoPro mancanti su Railway');
-    }
-
-    await page.locator(emailSelector).fill(email);
-    await page.locator('input[type="password"]').fill(password);
-
-    await page.click('button[type="submit"]');
-
-    console.log('Login inviato');
-
-    await page.waitForTimeout(8000);
-
-    console.log('Dopo login URL:', page.url());
-
-    // ================= LINK =================
     const targetUrl = extractRealProntoProUrl(url);
 
     console.log('URL ORIGINALE:', url);
@@ -166,7 +106,6 @@ timeout: 60000,
         testo_completo: bodyText,
       },
     });
-
   } catch (error) {
     console.error('ERRORE /scrape:', error);
 
