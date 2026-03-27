@@ -61,10 +61,11 @@ app.post('/scrape', async (req, res) => {
 
     console.log('Browser avviato');
 
-const context = await browser.newContext({
-  userAgent:
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
-});    console.log('Context creato');
+    const context = await browser.newContext({
+      userAgent:
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
+    });
+    console.log('Context creato');
 
     const page = await context.newPage();
     await page.setViewportSize({ width: 1280, height: 800 });
@@ -73,28 +74,54 @@ const context = await browser.newContext({
     // ================= LOGIN =================
     console.log('Vado su login ProntoPro');
 
-await page.goto('https://pro.prontopro.it/login', {
-  waitUntil: 'domcontentloaded',
-  timeout: 30000,
-});
+    await page.goto('https://pro.prontopro.it/login', {
+      waitUntil: 'domcontentloaded',
+      timeout: 30000,
+    });
 
-await page.waitForTimeout(3000);
+    await page.waitForTimeout(4000);
 
-await page.waitForSelector('input[type="email"]', { timeout: 15000 });
+    console.log('URL dopo goto:', page.url());
+    console.log('TITLE:', await page.title());
+
+    // 🔥 PROVA PIÙ SELETTORI (ANTI-BOT FIX)
+    let emailSelector = null;
+
+    const possibleSelectors = [
+      'input[type="email"]',
+      'input[name="email"]',
+      'input#email',
+      'input[type="text"]'
+    ];
+
+    for (const sel of possibleSelectors) {
+      const found = await page.$(sel);
+      if (found) {
+        emailSelector = sel;
+        console.log('Campo email trovato con:', sel);
+        break;
+      }
+    }
+
+    if (!emailSelector) {
+      const html = await page.content();
+      console.log('HTML DEBUG:', html.slice(0, 1000));
+
+      throw new Error('Campo email NON trovato → probabile blocco anti-bot');
+    }
+
     console.log('Inserisco credenziali...');
 
     const email = process.env.PRONTOPRO_EMAIL;
-const password = process.env.PRONTOPRO_PASSWORD;
+    const password = process.env.PRONTOPRO_PASSWORD;
 
-console.log('EMAIL:', email);
-console.log('PASSWORD PRESENTE:', !!password);
+    if (!email || !password) {
+      throw new Error('Credenziali ProntoPro mancanti su Railway');
+    }
 
-if (!email || !password) {
-  throw new Error('Credenziali ProntoPro mancanti su Railway');
-}
+    await page.locator(emailSelector).fill(email);
+    await page.locator('input[type="password"]').fill(password);
 
-await page.locator('input[type="email"]').fill(email);
-await page.locator('input[type="password"]').fill(password);
     await page.click('button[type="submit"]');
 
     console.log('Login inviato');
