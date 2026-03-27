@@ -13,7 +13,6 @@ function extractRealProntoProUrl(inputUrl) {
 
   let decoded = inputUrl;
 
-  // decode multiplo
   for (let i = 0; i < 5; i++) {
     try {
       const next = decodeURIComponent(decoded);
@@ -24,13 +23,11 @@ function extractRealProntoProUrl(inputUrl) {
     }
   }
 
-  // caso migliore: trova direttamente open.prontopro.it
   const openMatch = decoded.match(/https:\/\/open\.prontopro\.it\/[^\s"'<>]+/i);
   if (openMatch) {
     return openMatch[0];
   }
 
-  // fallback: se c'è un link prontopro.it non cdn, prova quello
   const genericMatch = decoded.match(/https:\/\/[^\s"'<>]*prontopro\.it\/[^\s"'<>]+/i);
   if (genericMatch) {
     return genericMatch[0];
@@ -70,7 +67,7 @@ app.post('/scrape', async (req, res) => {
     const page = await context.newPage();
     console.log('Page creata');
 
-    // DEBUG LOGIN PRONTOPRO
+    // ================= LOGIN =================
     console.log('Vado su login ProntoPro');
 
     await page.goto('https://pro.prontopro.it/login', {
@@ -78,15 +75,22 @@ app.post('/scrape', async (req, res) => {
       timeout: 60000,
     });
 
-    console.log('URL DOPO GOTO:', page.url());
-
-    const html = await page.content();
-    console.log('HTML PREVIEW:', html.slice(0, 500));
-
-    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(5000);
 
-    // DEBUG PAGINA LAVORO / LINK OPPORTUNITÀ
+    console.log('Inserisco credenziali...');
+
+    await page.fill('input[type="email"]', process.env.PP_EMAIL);
+    await page.fill('input[type="password"]', process.env.PP_PASSWORD);
+
+    await page.click('button[type="submit"]');
+
+    console.log('Login inviato');
+
+    await page.waitForTimeout(8000);
+
+    console.log('Dopo login URL:', page.url());
+
+    // ================= LINK =================
     const targetUrl = extractRealProntoProUrl(url);
 
     console.log('URL ORIGINALE:', url);
@@ -98,7 +102,7 @@ app.post('/scrape', async (req, res) => {
       timeout: 60000,
     });
 
-    await page.waitForTimeout(5000);
+    await page.waitForTimeout(6000);
 
     console.log('Pagina lavoro aperta:', page.url());
 
@@ -114,6 +118,7 @@ app.post('/scrape', async (req, res) => {
         testo_completo: bodyText,
       },
     });
+
   } catch (error) {
     console.error('ERRORE /scrape:', error);
 
