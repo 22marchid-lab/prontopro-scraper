@@ -56,9 +56,21 @@ app.post('/scrape', async (req, res) => {
     await page.waitForTimeout(5000);
 
     // DEBUG PAGINA LAVORO / LINK OPPORTUNITÀ
-    console.log('Vado sulla pagina lavoro:', url);
+    let targetUrl = url;
 
-    await page.goto(url, {
+    if (targetUrl.includes('ses.prontopro.it')) {
+      const decodedUrl = decodeURIComponent(targetUrl);
+      const match = decodedUrl.match(/https:\/\/open\.prontopro\.it\/[^\s]+/i);
+      if (match) {
+        targetUrl = match[0];
+      }
+    }
+
+    console.log('URL ORIGINALE:', url);
+    console.log('URL PULITO:', targetUrl);
+    console.log('Vado sulla pagina lavoro:', targetUrl);
+
+    await page.goto(targetUrl, {
       waitUntil: 'domcontentloaded',
       timeout: 60000,
     });
@@ -75,7 +87,7 @@ app.post('/scrape', async (req, res) => {
     return res.json({
       success: true,
       data: {
-        url,
+        url: targetUrl,
         testo_completo: bodyText,
       },
     });
