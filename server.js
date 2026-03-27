@@ -71,12 +71,11 @@ app.post('/scrape', async (req, res) => {
     console.log('Vado su login ProntoPro');
 
     await page.goto('https://pro.prontopro.it/login', {
-      waitUntil: 'domcontentloaded',
-      timeout: 60000,
-    });
+  waitUntil: 'networkidle',
+  timeout: 60000,
+});
 
-    await page.waitForTimeout(5000);
-
+await page.waitForSelector('input[type="email"]', { timeout: 15000 });
     console.log('Inserisco credenziali...');
 
     const email = process.env.PRONTOPRO_EMAIL;
@@ -90,8 +89,8 @@ if (!email || !password) {
 }
 
 await page.fill('input[type="email"]', email);
-await page.fill('input[type="password"]', password);
-
+await page.locator('input[type="email"]').fill(email);
+await page.locator('input[type="password"]').fill(password);
     await page.click('button[type="submit"]');
 
     console.log('Login inviato');
