@@ -17,7 +17,7 @@ app.post('/scrape', async (req, res) => {
   if (!url) {
     return res.status(400).json({
       success: false,
-      error: 'URL mancante'
+      error: 'URL mancante',
     });
   }
 
@@ -28,7 +28,7 @@ app.post('/scrape', async (req, res) => {
 
     browser = await chromium.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
 
     console.log('Browser avviato');
@@ -39,43 +39,28 @@ app.post('/scrape', async (req, res) => {
     const page = await context.newPage();
     console.log('Page creata');
 
+    // DEBUG LOGIN PRONTOPRO
     console.log('Vado su login ProntoPro');
 
-await page.goto('https://pro.prontopro.it/login', {
-  waitUntil: 'domcontentloaded',
-  timeout: 60000
-});
+    await page.goto('https://pro.prontopro.it/login', {
+      waitUntil: 'domcontentloaded',
+      timeout: 60000,
+    });
 
-await page.waitForLoadState('domcontentloaded');
-await page.waitForTimeout(3000);
+    console.log('URL DOPO GOTO:', page.url());
 
-console.log('URL dopo goto login:', page.url());
+    const html = await page.content();
+    console.log('HTML PREVIEW:', html.slice(0, 500));
 
-const html = await page.content();
-console.log('HTML login preview:', html.slice(0, 2000));
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(5000);
 
-const emailSelector = 'input[type="email"], input[name="email"], input[autocomplete="username"]';
-const passwordSelector = 'input[type="password"], input[name="password"], input[autocomplete="current-password"]';
-
-console.log('Cerco campo email');
-await page.waitForSelector(emailSelector, { timeout: 15000 });
-await page.fill(emailSelector, process.env.PRONTOPRO_EMAIL);
-
-console.log('Cerco campo password');
-await page.waitForSelector(passwordSelector, { timeout: 15000 });
-await page.fill(passwordSelector, process.env.PRONTOPRO_PASSWORD);
-
-console.log('Click login');
-await page.click('button[type="submit"], button');
-
-await page.waitForTimeout(5000);
-console.log('Login inviato, URL attuale:', page.url());
-
+    // DEBUG PAGINA LAVORO / LINK OPPORTUNITÀ
     console.log('Vado sulla pagina lavoro:', url);
 
     await page.goto(url, {
       waitUntil: 'domcontentloaded',
-      timeout: 60000
+      timeout: 60000,
     });
 
     await page.waitForTimeout(5000);
@@ -91,8 +76,8 @@ console.log('Login inviato, URL attuale:', page.url());
       success: true,
       data: {
         url,
-        testo_completo: bodyText
-      }
+        testo_completo: bodyText,
+      },
     });
   } catch (error) {
     console.error('ERRORE /scrape:', error);
@@ -108,7 +93,7 @@ console.log('Login inviato, URL attuale:', page.url());
     return res.status(500).json({
       success: false,
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
     });
   }
 });
