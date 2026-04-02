@@ -113,7 +113,7 @@ app.post('/scrape', async (req, res) => {
     });
 
     // 🔥 FIX IMPORTANTE (NO CRASH)
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(5000);
 
     console.log('Pagina caricata:', page.url());
 
