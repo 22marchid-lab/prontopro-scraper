@@ -8,6 +8,7 @@ app.get('/', (req, res) => {
   res.send('ProntoPro scraper online');
 });
 
+// 🔧 FUNZIONE PER PULIRE URL
 function extractRealProntoProUrl(inputUrl) {
   if (!inputUrl) return '';
 
@@ -23,19 +24,16 @@ function extractRealProntoProUrl(inputUrl) {
     }
   }
 
-  const openMatch = decoded.match(/https:\/\/open\.prontopro\.it\/[^\s"'<>]+/i);
-  if (openMatch) {
-    return openMatch[0];
-  }
+  const openMatch = decoded.match(/https:\/\/open\.prontopro\.it\/[^\s"<>]+/i);
+  if (openMatch) return openMatch[0];
 
-  const genericMatch = decoded.match(/https:\/\/[^\s"'<>]*prontopro\.it\/[^\s"'<>]+/i);
-  if (genericMatch) {
-    return genericMatch[0];
-  }
+  const genericMatch = decoded.match(/https:\/\/[^\s"<>]*prontopro\.it\/[^\s"<>]+/i);
+  if (genericMatch) return genericMatch[0];
 
   return inputUrl;
 }
 
+// 🚀 ENDPOINT PRINCIPALE
 app.post('/scrape', async (req, res) => {
   console.log('POST /scrape ricevuto');
   console.log('BODY:', req.body);
@@ -52,50 +50,76 @@ app.post('/scrape', async (req, res) => {
   let browser;
 
   try {
-    console.log('Avvio browser');
+    console.log('Avvio browser...');
 
     browser = await chromium.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--no-zygote",
+        "--single-process",
+        "--disable-background-networking",
+        "--disable-background-timer-throttling",
+        "--disable-renderer-backgrounding",
+        "--disable-breakpad",
+        "--disable-client-side-phishing-detection",
+        "--disable-default-apps",
+        "--disable-extensions",
+        "--disable-sync",
+        "--metrics-recording-only",
+        "--mute-audio",
+        "--no-first-run"
+      ]
     });
 
     console.log('Browser avviato');
 
     const context = await browser.newContext({
-      storageState: 'storageState.json',
+      // 🔥 IMPORTANTE: disattivato per evitare crash su Railway
+      // storageState: 'storageState.json',
+
       userAgent:
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+        "(KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
+
       viewport: { width: 1280, height: 800 },
       locale: 'it-IT',
       timezoneId: 'Europe/Rome',
     });
-    console.log('Context creato con sessione salvata');
+
+    console.log('Context creato');
 
     const page = await context.newPage();
+
     await page.addInitScript(() => {
       Object.defineProperty(navigator, 'webdriver', {
         get: () => false,
       });
     });
+
     console.log('Page creata');
 
     const targetUrl = extractRealProntoProUrl(url);
 
     console.log('URL ORIGINALE:', url);
     console.log('URL PULITO:', targetUrl);
-    console.log('Vado sulla pagina lavoro:', targetUrl);
 
     await page.goto(targetUrl, {
       waitUntil: 'domcontentloaded',
       timeout: 60000,
     });
 
-    await page.waitForTimeout(6000);
+    // 🔥 FIX IMPORTANTE (NO CRASH)
+    await page.waitForLoadState('networkidle');
 
-    console.log('Pagina lavoro aperta:', page.url());
+    console.log('Pagina caricata:', page.url());
 
     const bodyText = await page.locator('body').innerText();
-    console.log('Body letto con successo');
+
+    console.log('Testo estratto');
 
     await browser.close();
 
@@ -106,6 +130,7 @@ app.post('/scrape', async (req, res) => {
         testo_completo: bodyText,
       },
     });
+
   } catch (error) {
     console.error('ERRORE /scrape:', error);
 
