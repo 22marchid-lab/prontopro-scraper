@@ -79,7 +79,7 @@ app.post('/scrape', async (req, res) => {
 
     const context = await browser.newContext({
       // 🔥 IMPORTANTE: disattivato per evitare crash su Railway
-      // storageState: 'storageState.json',
+      storageState: 'storageState.json',
 
       userAgent:
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
@@ -106,7 +106,22 @@ app.post('/scrape', async (req, res) => {
 
     console.log('URL ORIGINALE:', url);
     console.log('URL PULITO:', targetUrl);
+// 🔐 LOGIN AUTOMATICO CORRETTO
+await page.goto('https://www.prontopro.it/login', {
+  waitUntil: 'domcontentloaded',
+});
 
+// aspetta input email
+await page.waitForSelector('input[type="email"]', { timeout: 10000 });
+
+await page.fill('input[type="email"]', process.env.PRONTOPRO_EMAIL);
+await page.fill('input[type="password"]', process.env.PRONTOPRO_PASSWORD);
+
+await page.click('button[type="submit"]');
+
+// aspetta che entri davvero
+await page.waitForTimeout(5000);
+    await context.storageState({ path: 'storageState.json' });
     await page.goto(targetUrl, {
       waitUntil: 'domcontentloaded',
       timeout: 60000,
