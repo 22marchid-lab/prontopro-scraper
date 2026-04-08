@@ -167,23 +167,43 @@ if (html.includes('Accedi') || html.includes('Registrati')) {
         testo_completo: bodyText,
       },
       });
-  } catch (error) {
-    console.error('ERRORE /scrape:', error);
+app.post('/scrape', async (req, res) => {
 
-    if (browser) {
-      try {
-        await browser.close();
-      } catch (e) {
-        console.error('Errore chiusura browser:', e);
-      }
+    let browser;
+
+    try {
+
+        // tutto il codice
+
+        return res.json({
+            success: true,
+            data: {
+                url: targetUrl,
+                testo_completo: bodyText,
+            }
+        });
+
+       }
+
+    catch (error) {
+
+        console.error('ERRORE /scrape:', error);
+
+        if (browser) {
+            try {
+                await browser.close();
+            } catch (e) {
+                console.error('Errore chiusura browser:', e);
+            }
+        }
+
+        return res.status(500).json({
+            success: false,
+            error: error.message,
+            stack: error.stack,
+        });
     }
 
-    return res.status(500).json({
-      success: false,
-      error: error.message,
-      stack: error.stack,
-    });
-  }
 });
 
 const PORT = process.env.PORT || 3000;
