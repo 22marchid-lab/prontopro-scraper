@@ -106,23 +106,49 @@ app.post('/scrape', async (req, res) => {
 
     console.log('URL ORIGINALE:', url);
     console.log('URL PULITO:', targetUrl);
-// 🔐 LOGIN AUTOMATICO CORRETTO
-await page.goto('https://www.prontopro.it/login', {
+await page.goto(targetUrl, {
   waitUntil: 'domcontentloaded',
 });
 
-// aspetta input email
-await page.waitForSelector('input[type="email"]', { timeout: 10000 });
+// aspetta un attimo
+await page.waitForTimeout(3000);
 
-await page.fill('input[type="email"]', process.env.PRONTOPRO_EMAIL);
-await page.fill('input[type="password"]', process.env.PRONTOPRO_PASSWORD);
+// 🔍 controllo se serve login
+    const html = await page.content();
+if (html.includes('Accedi') || html.includes('Registrati')) {
 
-await page.click('button[type="submit"]');
+  console.log('🔐 LOGIN NECESSARIO');
 
-// aspetta che entri davvero
-await page.waitForTimeout(5000);
+  await page.goto('https://www.prontopro.it/login', {
+    waitUntil: 'domcontentloaded',
+  });
+
+  // aspetta MA NON CRASHA
+  await page.waitForSelector('input[type="email"]', { timeout: 10000 }).catch(() => {
+    console.log('⚠️ campo email non trovato');
+  });
+
+  // ri-controlla se esiste davvero
+  const emailInput = await page.$('input[type="email"]');
+
+  if (emailInput) {
+    await page.fill('input[type="email"]', process.env.PRONTOPRO_EMAIL);
+    await page.fill('input[type="password"]', process.env.PRONTOPRO_PASSWORD);
+
+    await page.click('button[type="submit"]');
+    await page.waitForTimeout(5000);
+
     await context.storageState({ path: 'storageState.json' });
+
+    // torna alla pagina lavoro
     await page.goto(targetUrl, {
+      waitUntil: 'domcontentloaded',
+    });
+
+  } else {
+    console.log('❌ login saltato (pagina diversa)');
+  }
+}
       waitUntil: 'domcontentloaded',
       timeout: 60000,
     });
