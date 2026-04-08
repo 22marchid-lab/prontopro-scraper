@@ -183,9 +183,7 @@ app.post('/scrape', async (req, res) => {
             }
         });
 
-       }
-
-    catch (error) {
+    }catch (error) {
 
         console.error('ERRORE /scrape:', error);
 
