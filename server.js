@@ -148,10 +148,6 @@ if (html.includes('Accedi') || html.includes('Registrati')) {
   } else {
     console.log('❌ login saltato (pagina diversa)');
   }
-}
-      waitUntil: 'domcontentloaded',
-      timeout: 60000,
-    });
 
     // 🔥 FIX IMPORTANTE (NO CRASH)
     await page.waitForTimeout(5000);
