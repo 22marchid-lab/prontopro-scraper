@@ -166,7 +166,6 @@ if (html.includes('Accedi') || html.includes('Registrati')) {
         url: targetUrl,
         testo_completo: bodyText,
       },
-    });
 
   } catch (error) {
     console.error('ERRORE /scrape:', error);
