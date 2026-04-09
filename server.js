@@ -183,26 +183,27 @@ app.post('/scrape', async (req, res) => {
             }
         });
 
-    }catch (error) {
+   } catch (error) {
 
-        console.error('ERRORE /scrape:', error);
+    console.error('ERRORE /scrape:', error);
 
-        if (browser) {
-            try {
-                await browser.close();
-            } catch (e) {
-                console.error('Errore chiusura browser:', e);
-            }
+    if (browser) {
+        try {
+            await browser.close();
+        } catch (e) {
+            console.error('Errore chiusura browser:', e);
         }
-
-        return res.status(500).json({
-            success: false,
-            error: error.message,
-            stack: error.stack,
-        });
     }
 
-});
+    return res.status(500).json({
+        success: false,
+        error: error.message,
+        stack: error.stack,
+    });
+}
+
+// 👇 QUESTA È FONDAMENTALE
+}); 
 
 const PORT = process.env.PORT || 3000;
 
