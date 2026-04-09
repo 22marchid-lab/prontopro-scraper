@@ -35,6 +35,7 @@ function extractRealProntoProUrl(inputUrl) {
 
 // 🚀 ENDPOINT PRINCIPALE
 app.post('/scrape', async (req, res) => {
+
   console.log('POST /scrape ricevuto');
   console.log('BODY:', req.body);
 
@@ -78,19 +79,14 @@ app.post('/scrape', async (req, res) => {
     console.log('Browser avviato');
 
     const context = await browser.newContext({
-      // 🔥 IMPORTANTE: disattivato per evitare crash su Railway
       storageState: 'storageState.json',
-
       userAgent:
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
         "(KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
-
       viewport: { width: 1280, height: 800 },
       locale: 'it-IT',
       timezoneId: 'Europe/Rome',
     });
-
-    console.log('Context creato');
 
     const page = await context.newPage();
 
@@ -100,56 +96,52 @@ app.post('/scrape', async (req, res) => {
       });
     });
 
-    console.log('Page creata');
-
     const targetUrl = extractRealProntoProUrl(url);
 
     console.log('URL ORIGINALE:', url);
     console.log('URL PULITO:', targetUrl);
-await page.goto(targetUrl, {
-  waitUntil: 'domcontentloaded',
-});
 
-// aspetta un attimo
-await page.waitForTimeout(3000);
-
-// 🔍 controllo se serve login
-    const html = await page.content();
-if (html.includes('Accedi') || html.includes('Registrati')) {
-
-  console.log('🔐 LOGIN NECESSARIO');
-
-  await page.goto('https://www.prontopro.it/login', {
-    waitUntil: 'domcontentloaded',
-  });
-
-  // aspetta MA NON CRASHA
-  await page.waitForSelector('input[type="email"]', { timeout: 10000 }).catch(() => {
-    console.log('⚠️ campo email non trovato');
-  });
-
-  // ri-controlla se esiste davvero
-  const emailInput = await page.$('input[type="email"]');
-
-  if (emailInput) {
-    await page.fill('input[type="email"]', process.env.PRONTOPRO_EMAIL);
-    await page.fill('input[type="password"]', process.env.PRONTOPRO_PASSWORD);
-
-    await page.click('button[type="submit"]');
-    await page.waitForTimeout(5000);
-
-    await context.storageState({ path: 'storageState.json' });
-
-    // torna alla pagina lavoro
     await page.goto(targetUrl, {
       waitUntil: 'domcontentloaded',
     });
 
-  } else {
-    console.log('❌ login saltato (pagina diversa)');
-  }
+    await page.waitForTimeout(3000);
 
-    // 🔥 FIX IMPORTANTE (NO CRASH)
+    // 🔍 controllo login
+    const html = await page.content();
+
+    if (html.includes('Accedi') || html.includes('Registrati')) {
+
+      console.log('🔐 LOGIN NECESSARIO');
+
+      await page.goto('https://www.prontopro.it/login', {
+        waitUntil: 'domcontentloaded',
+      });
+
+      await page.waitForSelector('input[type="email"]', { timeout: 10000 }).catch(() => {
+        console.log('⚠️ campo email non trovato');
+      });
+
+      const emailInput = await page.$('input[type="email"]');
+
+      if (emailInput) {
+        await page.fill('input[type="email"]', process.env.PRONTOPRO_EMAIL);
+        await page.fill('input[type="password"]', process.env.PRONTOPRO_PASSWORD);
+
+        await page.click('button[type="submit"]');
+        await page.waitForTimeout(5000);
+
+        await context.storageState({ path: 'storageState.json' });
+
+        await page.goto(targetUrl, {
+          waitUntil: 'domcontentloaded',
+        });
+
+      } else {
+        console.log('❌ login saltato');
+      }
+    }
+
     await page.waitForTimeout(5000);
 
     console.log('Pagina caricata:', page.url());
@@ -166,45 +158,29 @@ if (html.includes('Accedi') || html.includes('Registrati')) {
         url: targetUrl,
         testo_completo: bodyText,
       },
-      });
-app.post('/scrape', async (req, res) => {
+    });
 
-    let browser;
-
-    try {
-
-        // tutto il codice
-
-        return res.json({
-            success: true,
-            data: {
-                url: targetUrl,
-                testo_completo: bodyText,
-            }
-        });
-
-   } catch (error) {
+  } catch (error) {
 
     console.error('ERRORE /scrape:', error);
 
     if (browser) {
-        try {
-            await browser.close();
-        } catch (e) {
-            console.error('Errore chiusura browser:', e);
-        }
+      try {
+        await browser.close();
+      } catch (e) {
+        console.error('Errore chiusura browser:', e);
+      }
     }
 
     return res.status(500).json({
-        success: false,
-        error: error.message,
-        stack: error.stack,
+      success: false,
+      error: error.message,
+      stack: error.stack,
     });
-}
+  }
+});
 
-// 👇 QUESTA È FONDAMENTALE
-}); 
-
+// 🚀 AVVIO SERVER
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
